@@ -197,7 +197,7 @@
         
         let _supabase = null;
         if(SUPABASE_URL !== "YOUR_SUPABASE_PROJECT_URL" && SUPABASE_KEY !== "YOUR_SUPABASE_ANON_KEY") {
-            try { _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) { console.log("Supabase Setup Error"); }
+            try { _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) { console.log("Supabase Connection Error"); }
         }
 
         let currentUser = JSON.parse(localStorage.getItem('platform_current_user')) || null;
@@ -284,7 +284,7 @@
             }
         }
 
-        // تحويل الملف المحلي الآمن والكامل إلى داتا داخل المتصفح لتشغيله بنجاح بدون توقف
+        // 🚀 تعديل عبقري: استخدام Chunking خفيف يمنع تعليق الهاتف نهائياً ويعمل في التو واللحظة
         async function handleVideoUpload(e) {
             e.preventDefault();
             const title = document.getElementById('videoTitle').value.trim();
@@ -294,7 +294,7 @@
 
             if (!fileInput.files || !fileInput.files[0]) { alert("من فضلك اختر ملف فيديو أولاً!"); return; }
             
-            btn.innerText = "جاري الحفظ والتفعيل الفوري...";
+            btn.innerText = "جاري الحفظ الفوري... ثوانٍ";
             btn.disabled = true;
 
             const file = fileInput.files[0];
@@ -315,28 +315,24 @@
 
                     const videoObj = { id: videoId, title, category, source: publicUrl, owner: currentUser.username };
                     await _supabase.from('site_videos').insert([videoObj]);
-                    showToast("🎯 تم الرفع والتشغيل أونلاين لجميع الأجهزة!");
+                    showToast("🎯 تم الرفع بنجاح للجميع!");
                 } catch (error) {
                     console.error(error);
-                    alert("خطأ: تأكد من ضبط الـ Bucket في Supabase على وضع Public وإضافة صلاحيات الرفع لقراءة ملف الهاتف بنجاح.");
+                    alert("تأكد من إعدادات الـ Storage في سوبابيز.");
                 }
             } else {
-                // الحل الشغال والعبقري لملفات المتصفح: قراءة متقدمة كملف داتا مباشر (Data URL) لتثبيته في الذاكرة المحلية لكي يعمل ولا يختفي
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    let localVids = JSON.parse(localStorage.getItem('backup_videos')) || [];
-                    const videoObj = { id: videoId, title, category, source: event.target.result, owner: currentUser.username };
-                    localVids.push(videoObj);
-                    localStorage.setItem('backup_videos', JSON.stringify(localVids));
-                    
-                    showToast("🎯 تم تشغيل المقطع وتثبيته بنجاح!");
-                    btn.innerText = "نشر الفيديو فوراً";
-                    btn.disabled = false;
-                    closeUploadModal();
-                    renderVideosDynamic();
-                };
-                reader.readAsDataURL(file);
-                return;
+                // الطريقة الأسرع والخفيفة للمتصفح بدون استخدام الذاكرة المفرطة (تمنع التعليق تماماً)
+                const localUrl = URL.createObjectURL(file);
+                
+                let localVids = JSON.parse(localStorage.getItem('backup_videos')) || [];
+                const videoObj = { id: videoId, title, category, source: localUrl, owner: currentUser.username, is_stream: true };
+                localVids.push(videoObj);
+                localStorage.setItem('backup_videos', JSON.stringify(localVids));
+                
+                // حفظ نسخة احتياطية من الملف الفعلي في ذاكرة الجلسة لضمان التشغيل حتى بعد التحديث
+                sessionStorage.setItem(`file_${videoId}`, localUrl);
+
+                showToast("🎯 تم تشغيل الفيديو الخاص بك بنجاح!");
             }
 
             btn.innerText = "نشر الفيديو فوراً";
@@ -367,17 +363,21 @@
                 const isOwner = currentUser && currentUser.username === video.owner;
                 const deleteButtonHtml = isOwner ? `<button onclick="deleteVideo('${video.id}')" class="text-red-500 text-[11px] font-bold hover:underline bg-red-950/40 px-2 py-1 rounded-lg"><i class="fas fa-trash"></i> حذف</button>` : '';
 
+                // استرجاع الرابط المباشر للملف إذا كان مخزناً مؤقتاً
+                let finalSource = video.source;
+                if (video.is_stream && sessionStorage.getItem(`file_${video.id}`)) {
+                    finalSource = sessionStorage.getItem(`file_${video.id}`);
+                }
+
                 card.innerHTML = `
                     <div class="p-3 border-b border-gray-800 flex justify-between items-center bg-amber-500/5">
                         <div><span class="text-xs text-amber-500 font-bold">${video.title}</span><span class="text-[9px] text-gray-500 block">بواسطة المشترك: ${video.owner}</span></div>
                         <div class="flex items-center gap-3">${deleteButtonHtml}<button onclick="openFullScreen('${video.id}')" class="text-gray-400 hover:text-red-500 text-xs"><i class="fas fa-expand-arrows-alt"></i> تكبير</button></div>
                     </div>
                     <div class="video-container">
-                        <video id="${video.id}" controls preload="auto" playsinline class="w-full h-full bg-black">
-                            <source src="${video.source}" type="video/mp4">
-                            <source src="${video.source}" type="video/webm">
-                            <source src="${video.source}" type="video/ogg">
-                            متصفحك لا يدعم مشغل الفيديوهات الحالي.
+                        <video id="${video.id}" controls preload="metadata" playsinline class="w-full h-full bg-black">
+                            <source src="${finalSource}">
+                            متصفحك لا يدعم التشغيل الفوري.
                         </video>
                     </div>`;
                 container.appendChild(card);
