@@ -3,440 +3,349 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة عرض الفيديوهات الجماعية</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>لوحة عرض المواقع المجمعة</title>
+    <!-- خط تجوال وأيقونات FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>tailwind.config = { darkMode: 'class' }</script>
+    
     <style>
-        .video-container {
-            position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; background-color: #000; border-radius: 0.5rem;
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --header-bg: #0b1120;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --radius: 12px;
         }
-        .video-container iframe, .video-container video {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* الشريط العلوي (الهيدر) */
+        header {
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--accent-color);
+        }
+
+        .logo i {
+            font-size: 1.4rem;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background-color: var(--panel-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background-color: var(--border-color);
+            border-color: var(--text-muted);
+        }
+
+        .btn.active {
+            background-color: var(--accent-color);
+            color: #fff;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+        }
+
+        /* حاوية المواقع الرئيسية */
+        .dashboard {
+            flex: 1;
+            padding: 12px;
+            display: grid;
+            gap: 12px;
+            height: calc(100vh - 60px);
+            transition: all 0.3s ease;
+        }
+
+        /* وضع التقسيم (4 شاشات) */
+        .dashboard.mode-grid {
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+        }
+
+        /* وضع الشاشة الواحدة */
+        .dashboard.mode-single .site-card {
+            display: none;
+        }
+
+        .dashboard.mode-single .site-card.active-site {
+            display: flex;
+            grid-column: 1 / -1;
+            grid-row: 1 / -1;
+        }
+
+        /* بطاقة الموقع (الكارت) */
+        .site-card {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            transition: border-color 0.2s;
+        }
+
+        .site-card:hover {
+            border-color: var(--accent-color);
+        }
+
+        /* شريط بطاقة الموقع */
+        .site-header {
+            background-color: rgba(15, 23, 42, 0.6);
+            padding: 6px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .site-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .site-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 4px;
+            border-radius: 4px;
+            transition: color 0.2s;
+        }
+
+        .action-btn:hover {
+            color: var(--text-color);
+        }
+
+        /* الإطار الخارجي للموقع (Iframe) */
+        .site-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: #ffffff;
+        }
+
+        /* استجابة الشاشة للهواتف */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .controls {
+                justify-content: center;
+            }
+            .dashboard.mode-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(4, 1fr);
+            }
         }
     </style>
 </head>
-<body class="bg-gray-950 text-gray-100 font-sans antialiased min-h-screen flex flex-col dark">
+<body>
 
-    <header class="bg-gray-900 border-b border-gray-800 sticky top-0 z-50 px-4 py-3 shadow-md">
-        <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+    <!-- الشريط العلوي للتنقل بين الأوضاع -->
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-border-all"></i>
+            <span>لوحة المواقع</span>
+        </div>
+
+        <div class="controls">
+            <!-- زر تقسيم الشاشة -->
+            <button class="btn active" id="btn-grid" onclick="switchView('grid')">
+                <i class="fa-solid fa-grip"></i> الشاشة المقسمة (4 مواقع)
+            </button>
             
-            <div class="flex items-center gap-3 justify-between w-full sm:w-auto">
-                <div class="flex items-center gap-2">
-                    <div class="bg-red-600 text-white p-1.5 rounded-lg"><i class="fas fa-play-circle text-xl"></i></div>
-                    <span class="text-lg font-bold text-white ml-2">منصتي الرقمية</span>
-                </div>
-
-                <select id="categorySelector" onchange="handleCategoryToggle(this.value)" class="bg-gray-800 text-white border border-gray-700 px-3 py-1.5 rounded-xl text-sm font-bold focus:outline-none cursor-pointer">
-                    <option value="soi">🔥 قسم:  سوي</option>
-                    <option value="shemale">✨ قسم: شيميل</option>
-                </select>
-            </div>
-            
-            <div class="flex items-center gap-2 justify-end w-full sm:w-auto flex-wrap">
-                <div id="userControlPanel" class="hidden flex items-center gap-2">
-                    <button onclick="openMyVideosModal()" class="text-xs font-bold bg-gray-800 hover:bg-gray-700 text-amber-400 px-3 py-2 rounded-xl border border-gray-700">
-                        <i class="fas fa-folder-open"></i> فيديوهاتي
-                    </button>
-                    <button onclick="openUploadModal()" class="text-xs font-bold bg-gradient-to-r from-amber-500 to-red-600 text-white px-3 py-2 rounded-xl shadow hover:opacity-90 transition-all">
-                        <i class="fas fa-file-upload"></i> رفع فيديو من الهاتف
-                    </button>
-                </div>
-
-                <div id="authButtons" class="flex items-center gap-2">
-                    <button onclick="openAuthModal('login')" class="text-xs font-bold bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-2 rounded-xl border border-gray-700"><i class="fas fa-sign-in-alt"></i> دخول</button>
-                    <button onclick="openAuthModal('register')" class="text-xs font-bold bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-xl shadow"><i class="fas fa-user-plus"></i> حساب جديد</button>
-                </div>
-                
-                <div id="userInfo" class="hidden flex items-center gap-2 bg-gray-800 border border-gray-700 px-3 py-1 rounded-xl">
-                    <span id="usernameDisplay" class="text-xs font-bold text-amber-400"></span>
-                    <button onclick="handleLogout()" class="text-red-400 hover:text-red-500 text-xs font-bold mr-2"><i class="fas fa-power-off"></i> خروج</button>
-                </div>
-
-                <button onclick="refreshCurrentPage()" class="p-2 rounded-full bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700"><i id="refreshIcon" class="fas fa-sync-alt text-sm"></i></button>
-            </div>
+            <!-- أزرار المواقع المنفردة -->
+            <button class="btn" id="btn-site-1" onclick="switchView(1)">
+                <i class="fa-solid fa-globe"></i> <span class="label-site-1">الموقع 1</span>
+            </button>
+            <button class="btn" id="btn-site-2" onclick="switchView(2)">
+                <i class="fa-solid fa-globe"></i> <span class="label-site-2">الموقع 2</span>
+            </button>
+            <button class="btn" id="btn-site-3" onclick="switchView(3)">
+                <i class="fa-solid fa-globe"></i> <span class="label-site-3">الموقع 3</span>
+            </button>
+            <button class="btn" id="btn-site-4" onclick="switchView(4)">
+                <i class="fa-solid fa-globe"></i> <span class="label-site-4">الموقع 4</span>
+            </button>
         </div>
     </header>
 
-    <div id="toast" class="fixed bottom-5 right-5 bg-green-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 z-50"><i class="fas fa-check-circle"></i><span id="toastText"></span></div>
-
-    <div id="authModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-gray-900 border border-gray-800 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
-            <button onclick="closeAuthModal()" class="absolute top-4 left-4 text-gray-400 hover:text-white"><i class="fas fa-times text-lg"></i></button>
-            <h2 id="modalTitle" class="text-xl font-bold text-white mb-4">تسجيل الدخول</h2>
-            <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
-                <input type="hidden" id="authMode" value="login">
-                <div>
-                    <label class="block text-xs font-medium mb-1 text-gray-400">اسم المستخدم:</label>
-                    <input type="text" id="authUsername" required class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium mb-1 text-gray-400">كلمة المرور:</label>
-                    <input type="password" id="authPassword" required class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none">
-                </div>
-                <button type="submit" id="authSubmitBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg text-sm"></button>
-            </form>
-        </div>
-    </div>
-
-    <div id="uploadModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-gray-900 border border-gray-800 w-full max-w-xl rounded-2xl p-6 shadow-2xl relative space-y-4">
-            <button onclick="closeUploadModal()" class="absolute top-4 left-4 text-gray-400 hover:text-white"><i class="fas fa-times text-lg"></i></button>
-            <h2 class="text-lg font-bold text-white flex items-center gap-2 border-b border-gray-800 pb-2">
-                <i class="fas fa-file-upload text-red-500"></i> رفع ملف فيديو من الاستوديو
-            </h2>
-            <form id="uploadForm" onsubmit="handleVideoUpload(event)" class="space-y-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-medium mb-1 text-gray-400">عنوان الفيديو:</label>
-                        <input type="text" id="videoTitle" required placeholder="اكتب اسم للفيديو..." class="w-full px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white text-xs focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium mb-1 text-gray-400">قسم النشر:</label>
-                        <select id="videoCategory" class="w-full px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white text-xs cursor-pointer">
-                            <option value="soi">🔥 قسم سوي</option>
-                            <option value="shemale">✨ قسم شيميل</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="border-2 border-dashed p-4 rounded-xl border-gray-700 bg-gray-800/40 text-center">
-                    <label class="block text-xs font-bold text-red-400 mb-2 cursor-pointer bg-gray-800 py-3 rounded-lg border border-gray-700 hover:bg-gray-700">
-                        <i class="fas fa-folder-open text-lg"></i> اضغط هنا لاختيار فيديو من الاستوديو
-                        <input type="file" id="videoFileInput" accept="video/*" required class="hidden">
-                    </label>
-                    <span id="fileNameDisplay" class="text-[11px] text-gray-400 block mt-1">لم يتم اختيار ملف بعد</span>
-                </div>
-                <button type="submit" id="uploadSubmitBtn" class="w-full bg-gradient-to-r from-red-600 to-amber-500 text-white font-bold py-2 rounded-xl shadow-lg text-xs">
-                    <i class="fas fa-cloud-upload-alt"></i> نشر الفيديو فوراً
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <div id="myVideosModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-gray-900 border border-gray-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative max-h-[80vh] flex flex-col">
-            <button onclick="closeMyVideosModal()" class="absolute top-4 left-4 text-gray-400 hover:text-white"><i class="fas fa-times text-lg"></i></button>
-            <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2 border-b border-gray-800 pb-2">
-                <i class="fas fa-video text-amber-500"></i> التحكم في فيديوهاتي
-            </h2>
-            <div id="myVideosList" class="space-y-3 overflow-y-auto pr-1 flex-grow text-xs"></div>
-        </div>
-    </div>
-
-    <main class="max-w-3xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
+    <!-- حاوية عرض المواقع -->
+    <main class="dashboard mode-grid" id="dashboard">
         
-        <div id="category-soi" class="category-content space-y-6">
-            <div class="video-card bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-xl">
-                <div class="p-3 border-b border-gray-800 flex justify-end"><button onclick="openFullScreen('iframe1')" class="text-gray-400 hover:text-red-500 text-xs"><i class="fas fa-expand-arrows-alt"></i> تكبير</button></div>
-                <div class="video-container"><iframe id="iframe1" src="https://www.xnxx-arabic.com/embedframe/uimiiud769b" allowfullscreen scrolling="no"></iframe></div>
+        <!-- الموقع الأول -->
+        <div class="site-card" id="card-1">
+            <div class="site-header">
+                <span class="site-title label-site-1"><i class="fa-solid fa-link"></i> الموقع 1</span>
+                <div class="site-actions">
+                    <button class="action-btn" title="تحديث" onclick="reloadSite(1)"><i class="fa-solid fa-rotate-right"></i></button>
+                    <button class="action-btn" title="فتح في تبويب جديد" onclick="openExternal(1)"><i class="fa-solid fa-up-right-from-square"></i></button>
+                    <button class="action-btn" title="تطبيق الشاشة الكاملة" onclick="switchView(1)"><i class="fa-solid fa-expand"></i></button>
+                </div>
             </div>
-            <div class="video-card bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-xl">
-                <div class="p-3 border-b border-gray-800 flex justify-end"><button onclick="openFullScreen('iframe2')" class="text-gray-400 hover:text-red-500 text-xs"><i class="fas fa-expand-arrows-alt"></i> تكبير</button></div>
-                <div class="video-container"><iframe id="iframe2" src="https://www.xnxx-arabic.com/embedframe/ivfidake475" allowfullscreen scrolling="no"></iframe></div>
-            </div>
-            <div class="video-card bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-xl">
-                <div class="p-3 border-b border-gray-800 flex justify-end"><button onclick="openFullScreen('iframe3')" class="text-gray-400 hover:text-red-500 text-xs"><i class="fas fa-expand-arrows-alt"></i> تكبير</button></div>
-                <div class="video-container"><iframe id="iframe3" src="https://www.xnxx-arabic.com/embedframe/icvfvvm0744" allowfullscreen scrolling="no"></iframe></div>
-            </div>
-            <div class="video-card bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-xl">
-                <div class="p-3 border-b border-gray-800 flex justify-end"><button onclick="openFullScreen('iframe5')" class="text-gray-400 hover:text-red-500 text-xs"><i class="fas fa-expand-arrows-alt"></i> تكبير</button></div>
-                <div class="video-container"><iframe id="iframe5" src="https://www.xnxx-arabic.com/embedframe/kmcbetf1df7" allowfullscreen scrolling="no"></iframe></div>
-            </div>
-            <div class="video-card bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-xl">
-                <div class="p-3 border-b border-gray-800 flex justify-end"><button onclick="openFullScreen('iframe6')" class="text-gray-400 hover:text-red-500 text-xs"><i class="fas fa-expand-arrows-alt"></i> تكبير</button></div>
-                <div class="video-container"><iframe id="iframe6" src="https://www.xnxx-arabic.com/embedframe/uhmeukk99fb" allowfullscreen scrolling="no"></iframe></div>
-            </div>
-            <div class="video-card bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-xl">
-                <div class="p-3 border-b border-gray-800 flex justify-end"><button onclick="openFullScreen('iframe7')" class="text-gray-400 hover:text-red-500 text-xs"><i class="fas fa-expand-arrows-alt"></i> تكبير</button></div>
-                <div class="video-container"><iframe id="iframe7" src="https://www.xnxx-arabic.com/embedframe/kclilif181e" allowfullscreen scrolling="no"></iframe></div>
-            </div>
-            <div class="video-card bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-xl">
-                <div class="p-3 border-b border-gray-800 flex justify-end"><button onclick="openFullScreen('iframe8')" class="text-gray-400 hover:text-red-500 text-xs"><i class="fas fa-expand-arrows-alt"></i> تكبير</button></div>
-                <div class="video-container"><iframe id="iframe8" src="https://www.xnxx-arabic.com/embedframe/havfodb5262" allowfullscreen scrolling="no"></iframe></div>
-            </div>
-            <div class="video-card bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-xl">
-                <div class="p-3 border-b border-gray-800 flex justify-end"><button onclick="openFullScreen('iframe9')" class="text-gray-400 hover:text-red-500 text-xs"><i class="fas fa-expand-arrows-alt"></i> تكبير</button></div>
-                <div class="video-container"><iframe id="iframe9" src="https://www.xnxx-arabic.com/embedframe/micote0972" allowfullscreen scrolling="no"></iframe></div>
-            </div>
-            <div class="video-card bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-xl">
-                <div class="p-3 border-b border-gray-800 flex justify-end"><button onclick="openFullScreen('iframe10')" class="text-gray-400 hover:text-red-500 text-xs"><i class="fas fa-expand-arrows-alt"></i> تكبير</button></div>
-                <div class="video-container"><iframe id="iframe10" src="https://www.xnxx-arabic.com/embedframe/iahkifv76d1" allowfullscreen scrolling="no"></iframe></div>
-            </div>
-            
-            <div id="uploaded-soi" class="space-y-6"></div>
+            <iframe id="iframe-1" class="site-iframe" src=""></iframe>
         </div>
 
-        <div id="category-shemale" class="category-content hidden space-y-6">
-            <div class="video-card bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-xl">
-                <div class="p-3 border-b border-gray-800 flex justify-end"><button onclick="openFullScreen('iframe4')" class="text-gray-400 hover:text-red-500 text-xs"><i class="fas fa-expand-arrows-alt"></i> تكبير</button></div>
-                <div class="video-container"><iframe id="iframe4" src="https://www.xnxx-arabic.com/embedframe/ohvkahh0464" allowfullscreen scrolling="no"></iframe></div>
+        <!-- الموقع الثاني -->
+        <div class="site-card" id="card-2">
+            <div class="site-header">
+                <span class="site-title label-site-2"><i class="fa-solid fa-link"></i> الموقع 2</span>
+                <div class="site-actions">
+                    <button class="action-btn" title="تحديث" onclick="reloadSite(2)"><i class="fa-solid fa-rotate-right"></i></button>
+                    <button class="action-btn" title="فتح في تبويب جديد" onclick="openExternal(2)"><i class="fa-solid fa-up-right-from-square"></i></button>
+                    <button class="action-btn" title="تطبيق الشاشة الكاملة" onclick="switchView(2)"><i class="fa-solid fa-expand"></i></button>
+                </div>
             </div>
-            <div class="video-card bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-xl">
-                <div class="p-3 border-b border-gray-800 flex justify-end"><button onclick="openFullScreen('iframe11')" class="text-gray-400 hover:text-red-500 text-xs"><i class="fas fa-expand-arrows-alt"></i> تكبير</button></div>
-                <div class="video-container"><iframe id="iframe11" src="https://www.xnxx-arabic.com/embedframe/ahpeip308f" allowfullscreen scrolling="no"></iframe></div>
-            </div>
-            <div class="video-card bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-xl">
-                <div class="p-3 border-b border-gray-800 flex justify-end"><button onclick="openFullScreen('iframe12')" class="text-gray-400 hover:text-red-500 text-xs"><i class="fas fa-expand-arrows-alt"></i> تكبير</button></div>
-                <div class="video-container"><iframe id="iframe12" src="https://www.xnxx-arabic.com/embedframe/uitvdaoa7d6" allowfullscreen scrolling="no"></iframe></div>
-            </div>
-            <div class="video-card bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-xl">
-                <div class="p-3 border-b border-gray-800 flex justify-end"><button onclick="openFullScreen('iframe13')" class="text-gray-400 hover:text-red-500 text-xs"><i class="fas fa-expand-arrows-alt"></i> تكبير</button></div>
-                <div class="video-container"><iframe id="iframe13" src="https://www.xnxx-arabic.com/embedframe/oomamft282c" allowfullscreen scrolling="no"></iframe></div>
-            </div>
-            
-            <div id="uploaded-shemale" class="space-y-6"></div>
+            <iframe id="iframe-2" class="site-iframe" src=""></iframe>
         </div>
+
+        <!-- الموقع الثالث -->
+        <div class="site-card" id="card-3">
+            <div class="site-header">
+                <span class="site-title label-site-3"><i class="fa-solid fa-link"></i> الموقع 3</span>
+                <div class="site-actions">
+                    <button class="action-btn" title="تحديث" onclick="reloadSite(3)"><i class="fa-solid fa-rotate-right"></i></button>
+                    <button class="action-btn" title="فتح في تبويب جديد" onclick="openExternal(3)"><i class="fa-solid fa-up-right-from-square"></i></button>
+                    <button class="action-btn" title="تطبيق الشاشة الكاملة" onclick="switchView(3)"><i class="fa-solid fa-expand"></i></button>
+                </div>
+            </div>
+            <iframe id="iframe-3" class="site-iframe" src=""></iframe>
+        </div>
+
+        <!-- الموقع الرابع -->
+        <div class="site-card" id="card-4">
+            <div class="site-header">
+                <span class="site-title label-site-4"><i class="fa-solid fa-link"></i> الموقع 4</span>
+                <div class="site-actions">
+                    <button class="action-btn" title="تحديث" onclick="reloadSite(4)"><i class="fa-solid fa-rotate-right"></i></button>
+                    <button class="action-btn" title="فتح في تبويب جديد" onclick="openExternal(4)"><i class="fa-solid fa-up-right-from-square"></i></button>
+                    <button class="action-btn" title="تطبيق الشاشة الكاملة" onclick="switchView(4)"><i class="fa-solid fa-expand"></i></button>
+                </div>
+            </div>
+            <iframe id="iframe-4" class="site-iframe" src=""></iframe>
+        </div>
+
     </main>
 
-    <footer class="bg-gray-900 border-t border-gray-800 text-center py-4 text-gray-500 text-xs mt-auto"><p>© 2026 منصتي الرقمية.</p></footer>
-
+    <!-- البرمجة والتحكم -->
     <script>
-        const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL"; 
-        const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY";
-        
-        let _supabase = null;
-        if(SUPABASE_URL !== "YOUR_SUPABASE_PROJECT_URL" && SUPABASE_KEY !== "YOUR_SUPABASE_ANON_KEY") {
-            try { _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) { console.log("Supabase Connection Error"); }
-        }
+        /* ===================================================
+           تعديل المواقع هنا بكل سهولة:
+           قم بتغيير الاسم (title) والرابط (url) لكل موقع تريد إضافته.
+        =================================================== */
+        const mySites = {
+            1: { title: "xvideos", url: "https://www.xvideos-ar.com" },
+            2: { title: "ar.stripchat", url: "https://ar.stripchat.com" },
+            3: { title: "xnxx", url: "https://www.xnxx-arabic.com" },
+            4: { title: "pornhub", url: "https://www.pornhub.com" }
+        };
 
-        let currentUser = JSON.parse(localStorage.getItem('platform_current_user')) || null;
-        let activeCategory = 'soi';
-
-        document.getElementById('videoFileInput').addEventListener('change', function(e) {
-            const fileName = e.target.files[0] ? e.target.files[0].name : "لم يتم اختيار ملف بعد";
-            document.getElementById('fileNameDisplay').innerText = fileName;
+        // تهيئة المواقع عند تحميل الصفحة
+        window.addEventListener('DOMContentLoaded', () => {
+            for (let i = 1; i <= 4; i++) {
+                // تحديث العناوين في الهيدر والبطاقات
+                document.querySelectorAll(`.label-site-${i}`).forEach(el => {
+                    el.textContent = mySites[i].title;
+                });
+                // تعيين روابط الـ Iframe
+                document.getElementById(`iframe-${i}`).src = mySites[i].url;
+            }
         });
 
-        function handleCategoryToggle(value) {
-            activeCategory = value;
-            document.querySelectorAll('.category-content').forEach(el => el.classList.add('hidden'));
-            const target = document.getElementById(`category-${value}`);
-            if(target) target.classList.remove('hidden');
-        }
-
-        function openAuthModal(mode) {
-            document.getElementById('authMode').value = mode;
-            document.getElementById('authModal').classList.remove('hidden');
-            document.getElementById('modalTitle').innerText = mode === 'login' ? "تسجيل الدخول" : "إنشاء حساب جديد";
-            document.getElementById('authSubmitBtn').innerText = mode === 'login' ? "تسجيل دخول" : "إنشاء الحساب الآن";
-        }
-        function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); document.getElementById('authForm').reset(); }
-        function openUploadModal() { document.getElementById('uploadModal').classList.remove('hidden'); }
-        function closeUploadModal() { document.getElementById('uploadModal').classList.add('hidden'); document.getElementById('uploadForm').reset(); document.getElementById('fileNameDisplay').innerText="لم يتم اختيار ملف بعد"; }
-        function openMyVideosModal() { document.getElementById('myVideosModal').classList.remove('hidden'); renderMyVideosManagementList(); }
-        function closeMyVideosModal() { document.getElementById('myVideosModal').classList.add('hidden'); }
-
-        async function handleAuthSubmit(e) {
-            e.preventDefault();
-            const mode = document.getElementById('authMode').value;
-            const username = document.getElementById('authUsername').value.trim().toLowerCase();
-            const pass = document.getElementById('authPassword').value;
-
-            if(_supabase) {
-                if (mode === 'register') {
-                    let { data: user } = await _supabase.from('site_users').select('*').eq('username', username).single();
-                    if (user) { alert("⚠️ هذا الاسم مسجل بالفعل!"); return; }
-                    await _supabase.from('site_users').insert([{ username: username, password: pass }]);
-                    currentUser = { username };
-                    showToast("🎉 تم إنشاء حسابك بنجاح!");
-                } else {
-                    let { data: user } = await _supabase.from('site_users').select('*').eq('username', username).single();
-                    if (!user || user.password !== pass) { alert("❌ اسم المستخدم أو كلمة السر خاطئة!"); return; }
-                    currentUser = { username };
-                    showToast("👋 تم تسجيل الدخول بنجاح.");
-                }
-            } else {
-                let localUsers = JSON.parse(localStorage.getItem('backup_users')) || [];
-                if(mode === 'register') {
-                    if(localUsers.some(u => u.username === username)) { alert("⚠️ الاسم مسجل!"); return; }
-                    localUsers.push({ username, pass });
-                    localStorage.setItem('backup_users', JSON.stringify(localUsers));
-                    currentUser = { username };
-                } else {
-                    const u = localUsers.find(u => u.username === username && u.pass === pass);
-                    if(!u) { alert("❌ خطأ في الاسم أو كلمة السر!"); return; }
-                    currentUser = { username };
-                }
-                showToast("👋 تسجيل دخول محلي.");
-            }
-
-            localStorage.setItem('platform_current_user', JSON.stringify(currentUser));
-            closeAuthModal(); updateAuthUI(); renderVideosDynamic();
-        }
-
-        function handleLogout() {
-            currentUser = null; localStorage.removeItem('platform_current_user');
-            updateAuthUI(); renderVideosDynamic(); showToast("تم تسجيل الخروج.");
-        }
-
-        function updateAuthUI() {
-            const authButtons = document.getElementById('authButtons');
-            const userInfo = document.getElementById('userInfo');
-            const userControlPanel = document.getElementById('userControlPanel');
-            if(currentUser) {
-                authButtons.classList.add('hidden'); userInfo.classList.remove('hidden');
-                document.getElementById('usernameDisplay').innerText = `👤 ${currentUser.username}`;
-                userControlPanel.classList.remove('hidden');
-            } else {
-                authButtons.classList.remove('hidden'); userInfo.classList.add('hidden');
-                userControlPanel.classList.add('hidden');
-            }
-        }
-
-        // 🚀 تعديل عبقري: استخدام Chunking خفيف يمنع تعليق الهاتف نهائياً ويعمل في التو واللحظة
-        async function handleVideoUpload(e) {
-            e.preventDefault();
-            const title = document.getElementById('videoTitle').value.trim();
-            const category = document.getElementById('videoCategory').value;
-            const fileInput = document.getElementById('videoFileInput');
-            const btn = document.getElementById('uploadSubmitBtn');
-
-            if (!fileInput.files || !fileInput.files[0]) { alert("من فضلك اختر ملف فيديو أولاً!"); return; }
+        // التبديل بين وضع التقسيم والموقع المنفرد
+        function switchView(target) {
+            const dashboard = document.getElementById('dashboard');
+            const buttons = document.querySelectorAll('.controls .btn');
             
-            btn.innerText = "جاري الحفظ الفوري... ثوانٍ";
-            btn.disabled = true;
+            // إزالة التنشيط عن جميع الأزرار
+            buttons.forEach(btn => btn.classList.remove('active'));
 
-            const file = fileInput.files[0];
-            const videoId = 'vid_' + Date.now();
-
-            if(_supabase) {
-                try {
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `${videoId}.${fileExt}`;
-                    
-                    let { data: uploadData, error: uploadError } = await _supabase.storage
-                        .from('videos')
-                        .upload(fileName, file);
-
-                    if (uploadError) throw uploadError;
-
-                    const { data: { publicUrl } } = _supabase.storage.from('videos').getPublicUrl(fileName);
-
-                    const videoObj = { id: videoId, title, category, source: publicUrl, owner: currentUser.username };
-                    await _supabase.from('site_videos').insert([videoObj]);
-                    showToast("🎯 تم الرفع بنجاح للجميع!");
-                } catch (error) {
-                    console.error(error);
-                    alert("تأكد من إعدادات الـ Storage في سوبابيز.");
-                }
+            if (target === 'grid') {
+                dashboard.className = 'dashboard mode-grid';
+                document.getElementById('btn-grid').classList.add('active');
             } else {
-                // الطريقة الأسرع والخفيفة للمتصفح بدون استخدام الذاكرة المفرطة (تمنع التعليق تماماً)
-                const localUrl = URL.createObjectURL(file);
+                dashboard.className = 'dashboard mode-single';
+                document.getElementById(`btn-site-${target}`).classList.add('active');
                 
-                let localVids = JSON.parse(localStorage.getItem('backup_videos')) || [];
-                const videoObj = { id: videoId, title, category, source: localUrl, owner: currentUser.username, is_stream: true };
-                localVids.push(videoObj);
-                localStorage.setItem('backup_videos', JSON.stringify(localVids));
-                
-                // حفظ نسخة احتياطية من الملف الفعلي في ذاكرة الجلسة لضمان التشغيل حتى بعد التحديث
-                sessionStorage.setItem(`file_${videoId}`, localUrl);
-
-                showToast("🎯 تم تشغيل الفيديو الخاص بك بنجاح!");
-            }
-
-            btn.innerText = "نشر الفيديو فوراً";
-            btn.disabled = false;
-            closeUploadModal();
-            renderVideosDynamic();
-        }
-
-        async function renderVideosDynamic() {
-            document.getElementById('uploaded-soi').innerHTML = ''; 
-            document.getElementById('uploaded-shemale').innerHTML = '';
-            
-            let videos = [];
-            if(_supabase) {
-                let { data } = await _supabase.from('site_videos').select('*').order('created_at', { ascending: false });
-                if(data) videos = data;
-            } else {
-                videos = JSON.parse(localStorage.getItem('backup_videos')) || [];
-            }
-
-            videos.forEach(video => {
-                const container = document.getElementById(`uploaded-${video.category}`);
-                if(!container) return;
-                const card = document.createElement('div');
-                card.id = `card-${video.id}`;
-                card.className = "video-card bg-gray-900 border border-amber-500/10 rounded-xl overflow-hidden shadow-xl border-2";
-                
-                const isOwner = currentUser && currentUser.username === video.owner;
-                const deleteButtonHtml = isOwner ? `<button onclick="deleteVideo('${video.id}')" class="text-red-500 text-[11px] font-bold hover:underline bg-red-950/40 px-2 py-1 rounded-lg"><i class="fas fa-trash"></i> حذف</button>` : '';
-
-                // استرجاع الرابط المباشر للملف إذا كان مخزناً مؤقتاً
-                let finalSource = video.source;
-                if (video.is_stream && sessionStorage.getItem(`file_${video.id}`)) {
-                    finalSource = sessionStorage.getItem(`file_${video.id}`);
-                }
-
-                card.innerHTML = `
-                    <div class="p-3 border-b border-gray-800 flex justify-between items-center bg-amber-500/5">
-                        <div><span class="text-xs text-amber-500 font-bold">${video.title}</span><span class="text-[9px] text-gray-500 block">بواسطة المشترك: ${video.owner}</span></div>
-                        <div class="flex items-center gap-3">${deleteButtonHtml}<button onclick="openFullScreen('${video.id}')" class="text-gray-400 hover:text-red-500 text-xs"><i class="fas fa-expand-arrows-alt"></i> تكبير</button></div>
-                    </div>
-                    <div class="video-container">
-                        <video id="${video.id}" controls preload="metadata" playsinline class="w-full h-full bg-black">
-                            <source src="${finalSource}">
-                            متصفحك لا يدعم التشغيل الفوري.
-                        </video>
-                    </div>`;
-                container.appendChild(card);
-            });
-        }
-
-        async function renderMyVideosManagementList() {
-            const container = document.getElementById('myVideosList');
-            container.innerHTML = '';
-            if(!currentUser) return;
-
-            let videos = [];
-            if(_supabase) {
-                let { data } = await _supabase.from('site_videos').select('*').eq('owner', currentUser.username);
-                if(data) videos = data;
-            } else {
-                let localVids = JSON.parse(localStorage.getItem('backup_videos')) || [];
-                videos = localVids.filter(v => v.owner === currentUser.username);
-            }
-
-            if(videos.length === 0) {
-                container.innerHTML = `<div class="text-center text-gray-500 py-4">لم تقم بنشر أي ملفات فيديو بعد.</div>`;
-                return;
-            }
-
-            videos.forEach(video => {
-                const item = document.createElement('div');
-                item.className = "flex items-center justify-between p-3 bg-gray-800 border border-gray-700 rounded-xl";
-                item.innerHTML = `
-                    <div class="flex-grow min-w-0 pl-2">
-                        <p class="font-bold text-amber-500 truncate">${video.title}</p>
-                    </div>
-                    <button onclick="deleteVideo('${video.id}')" class="bg-red-950 text-red-400 border border-red-900/50 hover:bg-red-900 hover:text-white px-3 py-1 rounded-lg shrink-0">
-                        <i class="fas fa-trash-alt"></i> حذف للكل
-                    </button>
-                `;
-                container.appendChild(item);
-            });
-        }
-
-        async function deleteVideo(id) {
-            if(confirm("هل تريد حذف هذا المقطع نهائياً من العرض عند كل الناس؟")) {
-                if(_supabase) {
-                    await _supabase.from('site_videos').delete().eq('id', id);
-                } else {
-                    let localVids = JSON.parse(localStorage.getItem('backup_videos')) || [];
-                    localVids = localVids.filter(v => v.id !== id);
-                    localStorage.setItem('backup_videos', JSON.stringify(localVids));
-                }
-                showToast("تم الحذف بنجاح.");
-                closeMyVideosModal();
-                renderVideosDynamic();
+                // تفعيل البطاقة المختارة فقط
+                document.querySelectorAll('.site-card').forEach(card => card.classList.remove('active-site'));
+                document.getElementById(`card-${target}`).classList.add('active-site');
             }
         }
 
-        window.onload = function() { updateAuthUI(); renderVideosDynamic(); };
-        function refreshCurrentPage() { location.reload(); }
-        function openFullScreen(id) { const elem = document.getElementById(id); if (elem.requestFullscreen) { elem.requestFullscreen(); } else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } }
-        function showToast(text) { const toast = document.getElementById('toast'); document.getElementById('toastText').innerText = text; toast.classList.remove('translate-y-20', 'opacity-0'); toast.classList.add('translate-y-0', 'opacity-100'); setTimeout(() => { toast.classList.remove('translate-y-0', 'opacity-100'); toast.classList.add('translate-y-20', 'opacity-0'); }, 3000); }
+        // إعادات التشغيل وفتح الرابط الخارجي
+        function reloadSite(id) {
+            const iframe = document.getElementById(`iframe-${id}`);
+            iframe.src = iframe.src;
+        }
+
+        function openExternal(id) {
+            window.open(mySites[id].url, '_blank');
+        }
     </script>
 </body>
 </html>
